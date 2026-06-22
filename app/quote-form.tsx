@@ -15,6 +15,42 @@ type Result =
 
 const fmt = (n: number) => n.toLocaleString("en-US") + "₮";
 
+// Downscale + recompress the photo in the browser before upload.
+// Fixes Vercel's 4.5MB request-body limit (raw phone photos exceed it) and
+// cuts Claude vision cost — image tokens scale with resolution, and 1568px on
+// the long edge is the most a sofa estimate needs.
+async function resizeImage(file: File, maxDim = 1568, quality = 0.85): Promise<Blob> {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = document.createElement("img");
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("image decode failed"));
+      img.src = url;
+    });
+    let { width, height } = img;
+    const longEdge = Math.max(width, height);
+    if (longEdge > maxDim) {
+      const scale = maxDim / longEdge;
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+    return await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+        "image/jpeg",
+        quality
+      )
+    );
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export default function QuoteForm() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -41,14 +77,33 @@ export default function QuoteForm() {
     }
     setLoading(true);
     try {
+      // Shrink the photo client-side; fall back to the original if it fails.
+      let photo: Blob = file;
+      let filename = file.name || "photo.jpg";
+      try {
+        photo = await resizeImage(file);
+        filename = "photo.jpg";
+      } catch {
+        /* keep original file */
+      }
+
       const fd = new FormData();
       fd.append("phone", phone);
       fd.append("address", address);
       fd.append("note", note);
-      fd.append("photo", file);
+      fd.append("photo", photo, filename);
       const res = await fetch("/api/leads", { method: "POST", body: fd });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Алдаа гарлаа.");
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {
+        /* non-JSON response (e.g. 413 from the platform) */
+      }
+      if (!res.ok) {
+        throw new Error(
+          data.error ?? `Алдаа гарлаа (${res.status}). Зургаа дахин оруулна уу.`
+        );
+      }
       setResult({ ...data });
     } catch (e: any) {
       setError(e.message);
