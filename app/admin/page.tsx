@@ -14,6 +14,7 @@ type Lead = {
   phone: string;
   address: string;
   note: string | null;
+  quantity: number | null;
   ai_analysis: {
     material?: string;
     seats?: number;
@@ -218,6 +219,9 @@ export default function AdminPage() {
                 </div>
                 <div style={S.field}>
                   <b>Хаяг:</b> {l.address}
+                </div>
+                <div style={S.field}>
+                  <b>Тоо:</b> {l.quantity ?? 1} ширхэг
                 </div>
                 {l.note && (
                   <div style={S.field}>

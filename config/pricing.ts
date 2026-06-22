@@ -38,3 +38,16 @@ export function normalizeSeats(seats: number): number {
   if (!Number.isFinite(seats) || seats < 1) return 3; // sane default
   return Math.min(Math.max(Math.round(seats), 1), 5);
 }
+
+// --- Multiple identical sofas ---
+// A customer can request several of the SAME sofa. We price one sofa, multiply
+// by quantity, then take a bulk discount once they hit the threshold.
+// Edit these three numbers to match your business.
+export const BULK_DISCOUNT_MIN_QTY = 2;   // discount applies at this many sofas and above
+export const BULK_DISCOUNT_RATE = 0.10;   // 10% off the total
+export const MAX_QUANTITY = 20;           // sanity cap
+
+export function normalizeQuantity(q: number): number {
+  if (!Number.isFinite(q) || q < 1) return 1;
+  return Math.min(Math.max(Math.round(q), 1), MAX_QUANTITY);
+}

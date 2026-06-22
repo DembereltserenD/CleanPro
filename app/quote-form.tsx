@@ -10,8 +10,8 @@
 import { useState, useRef } from "react";
 
 type Result =
-  | { mode: "instant"; leadId: string; estimate: { min: number; max: number }; message: string }
-  | { mode: "manual"; leadId: string; message: string };
+  | { mode: "instant"; leadId: string; estimate: { min: number; max: number }; message: string; quantity?: number }
+  | { mode: "manual"; leadId: string; message: string; quantity?: number };
 
 const fmt = (n: number) => n.toLocaleString("en-US") + "₮";
 
@@ -55,6 +55,7 @@ export default function QuoteForm() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [note, setNote] = useState("");
+  const [quantity, setQuantity] = useState("1");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -91,6 +92,7 @@ export default function QuoteForm() {
       fd.append("phone", phone);
       fd.append("address", address);
       fd.append("note", note);
+      fd.append("quantity", String(Math.max(1, parseInt(quantity, 10) || 1)));
       fd.append("photo", photo, filename);
       const res = await fetch("/api/leads", { method: "POST", body: fd });
       let data: any = {};
@@ -154,6 +156,9 @@ export default function QuoteForm() {
               <h1 style={S.price}>
                 {fmt(result.estimate.min)} – {fmt(result.estimate.max)}
               </h1>
+              {result.quantity && result.quantity > 1 && (
+                <p style={S.sub}>{result.quantity} ширхэг буйдангийн нийт үнэ</p>
+              )}
               <p style={S.p}>
                 Эцсийн үнэ газар дээр нь үзсэний дараа батлагдана. Үргэлжлүүлэх үү?
               </p>
@@ -191,6 +196,10 @@ export default function QuoteForm() {
         <label style={S.label}>Нэмэлт тайлбар (заавал биш)</label>
         <input style={S.input} placeholder="Жнь: муурны үс их, кофены толбо"
           value={note} onChange={(e) => setNote(e.target.value)} />
+
+        <label style={S.label}>Хэдэн ижил буйдан?</label>
+        <input style={S.input} inputMode="numeric" placeholder="1"
+          value={quantity} onChange={(e) => setQuantity(e.target.value)} />
 
         <label style={S.label}>Буйдангийн зураг</label>
         <input ref={fileRef} type="file" accept="image/*" capture="environment"

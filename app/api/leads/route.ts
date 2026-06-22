@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin, PHOTO_BUCKET } from "../../../lib/supabase";
 import { analyzeSofa } from "../../../lib/vision";
 import { buildEstimate } from "../../../lib/estimate";
+import { normalizeQuantity } from "../../../config/pricing";
 import { notify } from "../../../lib/notify";
 
 export const runtime = "nodejs";
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
   const phone = String(form.get("phone") ?? "").trim();
   const address = String(form.get("address") ?? "").trim();
   const note = String(form.get("note") ?? "").trim() || null;
+  const quantity = normalizeQuantity(Number(form.get("quantity") ?? 1));
   const photo = form.get("photo") as File | null;
 
   if (!validPhone(phone)) return NextResponse.json({ error: "Утасны дугаараа зөв оруулна уу (8 оронтой). Жнь: 99112233" }, { status: 400 });
@@ -79,7 +81,7 @@ export async function POST(req: NextRequest) {
   const analysis = await analyzeSofa(bytes.toString("base64"), photo.type as any, note);
 
   // 3) pricing decision
-  const est = buildEstimate(analysis);
+  const est = buildEstimate(analysis, quantity);
   const isInstant = est.mode === "instant";
 
   // 4) insert lead
@@ -89,6 +91,7 @@ export async function POST(req: NextRequest) {
       phone,
       address,
       note,
+      quantity,
       photo_path: photoPath,
       ai_analysis: analysis,
       quote_mode: est.mode,
@@ -113,11 +116,18 @@ export async function POST(req: NextRequest) {
           leadId: lead.id,
           mode: "instant",
           estimate: { min: est.min, max: est.max },
-          message: "Ойролцоо үнийн санал бэлэн боллоо.",
+          quantity,
+          message:
+            quantity > 1
+              ? `${quantity} ширхэг буйдангийн ойролцоо үнэ бэлэн боллоо${
+                  est.discountApplied ? " (бөөний хямдрал орсон)" : ""
+                }.`
+              : "Ойролцоо үнийн санал бэлэн боллоо.",
         }
       : {
           leadId: lead.id,
           mode: "manual",
+          quantity,
           message: "Бид таны зургийг хүлээн авлаа. Удахгүй үнийн саналаа илгээх болно.",
         }
   );

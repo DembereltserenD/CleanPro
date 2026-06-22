@@ -9,6 +9,7 @@ create table if not exists public.leads (
   phone         text not null,
   address       text not null,
   note          text,
+  quantity      int not null default 1,     -- number of identical sofas
   photo_path    text,                       -- path inside the 'sofa-photos' storage bucket
   ai_analysis   jsonb,                       -- {material, seats, stain_level, confidence, ...}
   quote_mode    text,                        -- 'instant' | 'manual'
