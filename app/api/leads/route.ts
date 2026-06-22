@@ -34,14 +34,14 @@ function validPhone(p: string) {
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
   if (rateLimited(ip)) {
-    return NextResponse.json({ error: "Too many requests. Try again shortly." }, { status: 429 });
+    return NextResponse.json({ error: "Хэт олон удаа илгээлээ. Түр хүлээгээд дахин оролдоно уу. 🙏" }, { status: 429 });
   }
 
   let form: FormData;
   try {
     form = await req.formData();
   } catch {
-    return NextResponse.json({ error: "Expected multipart/form-data." }, { status: 400 });
+    return NextResponse.json({ error: "Хүсэлт буруу байна. Дахин оролдоно уу." }, { status: 400 });
   }
 
   const phone = String(form.get("phone") ?? "").trim();
@@ -49,16 +49,16 @@ export async function POST(req: NextRequest) {
   const note = String(form.get("note") ?? "").trim() || null;
   const photo = form.get("photo") as File | null;
 
-  if (!validPhone(phone)) return NextResponse.json({ error: "Invalid phone number." }, { status: 400 });
-  if (address.length < 5) return NextResponse.json({ error: "Address is too short." }, { status: 400 });
-  if (!photo) return NextResponse.json({ error: "Photo is required." }, { status: 400 });
+  if (!validPhone(phone)) return NextResponse.json({ error: "Утасны дугаараа зөв оруулна уу (8 оронтой). Жнь: 99112233" }, { status: 400 });
+  if (address.length < 5) return NextResponse.json({ error: "Хаягаа бүрэн бичнэ үү — дүүрэг, хороо, байр, тоот." }, { status: 400 });
+  if (!photo) return NextResponse.json({ error: "Буйдангийн зургаа оруулна уу. 📷" }, { status: 400 });
 
   const allowed = ["image/jpeg", "image/png", "image/webp"] as const;
   if (!allowed.includes(photo.type as any)) {
-    return NextResponse.json({ error: "Photo must be JPEG, PNG, or WEBP." }, { status: 400 });
+    return NextResponse.json({ error: "Зураг JPEG, PNG эсвэл WEBP форматтай байх ёстой." }, { status: 400 });
   }
   if (photo.size > 8 * 1024 * 1024) {
-    return NextResponse.json({ error: "Photo too large (max 8MB)." }, { status: 400 });
+    return NextResponse.json({ error: "Зураг хэт том байна. Арай жижиг зураг оруулна уу." }, { status: 400 });
   }
 
   const db = supabaseAdmin();
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
     upsert: false,
   });
   if (up.error) {
-    return NextResponse.json({ error: "Photo upload failed." }, { status: 500 });
+    return NextResponse.json({ error: "Зураг хадгалахад алдаа гарлаа. Дахин оролдоно уу." }, { status: 500 });
   }
 
   // 2) AI analysis
@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error || !lead) {
-    return NextResponse.json({ error: "Could not save your request." }, { status: 500 });
+    return NextResponse.json({ error: "Таны хүсэлтийг хадгалж чадсангүй. Түр хүлээгээд дахин оролдоно уу." }, { status: 500 });
   }
 
   // 5) notify admin (fire-and-forget is fine, but await keeps it reliable on serverless)

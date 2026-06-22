@@ -13,10 +13,10 @@ export async function POST(req: NextRequest) {
   try {
     body = await req.json();
   } catch {
-    return NextResponse.json({ error: "Invalid JSON." }, { status: 400 });
+    return NextResponse.json({ error: "Алдаа гарлаа. Дахин оролдоно уу." }, { status: 400 });
   }
   const leadId = body.leadId;
-  if (!leadId) return NextResponse.json({ error: "leadId required." }, { status: 400 });
+  if (!leadId) return NextResponse.json({ error: "Алдаа гарлаа. Дахин оролдоно уу." }, { status: 400 });
 
   const db = supabaseAdmin();
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error || !lead) {
-    return NextResponse.json({ error: "Lead not found or not confirmable." }, { status: 404 });
+    return NextResponse.json({ error: "Захиалга олдсонгүй эсвэл аль хэдийн баталгаажсан байна." }, { status: 404 });
   }
 
   await notify(lead, "confirmed");
