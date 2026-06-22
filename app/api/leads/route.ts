@@ -75,8 +75,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Зураг хадгалахад алдаа гарлаа. Дахин оролдоно уу." }, { status: 500 });
   }
 
-  // 2) AI analysis
-  const analysis = await analyzeSofa(bytes.toString("base64"), photo.type as any);
+  // 2) AI analysis (photo + the customer's note, if any)
+  const analysis = await analyzeSofa(bytes.toString("base64"), photo.type as any, note);
 
   // 3) pricing decision
   const est = buildEstimate(analysis);
