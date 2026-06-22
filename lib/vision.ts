@@ -25,7 +25,7 @@ export async function analyzeSofa(
   mediaType: "image/jpeg" | "image/png" | "image/webp"
 ): Promise<Analysis> {
   const msg = await client.messages.create({
-    model: "claude-sonnet-4-6",
+    model: "claude-haiku-4-5",
     max_tokens: 500,
     system: SYSTEM,
     messages: [
